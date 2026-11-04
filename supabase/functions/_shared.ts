@@ -76,3 +76,7 @@ export function mapDuitkuCallbackStatus(code: string): 'paid' | 'failed' | 'need
   if (code === '01') return 'failed';
   return 'needs_review';
 }
+
+export function trustedClientAddress(req: Request): string | null {
+  return req.headers.get('cf-connecting-ip') ?? req.headers.get('x-real-ip');
+}
