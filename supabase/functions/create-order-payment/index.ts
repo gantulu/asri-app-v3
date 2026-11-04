@@ -19,6 +19,9 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return fail(req, 'Invalid checkout payload', 400);
+    }
     const customerName = typeof body.customer_name === 'string' ? body.customer_name.trim() : '';
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
@@ -35,7 +38,7 @@ Deno.serve(async (req) => {
       return fail(req, 'Invalid email', 400);
     }
     if (!/^[+0-9() .-]{8,30}$/.test(phone) || address.length > 500
-      || city.length > 100 || postalCode.length > 20) {
+      || city.length > 100 || !/^\\d{4,10}$/.test(postalCode)) {
       return fail(req, 'Invalid delivery details', 400);
     }
     if (!Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > 50) {
@@ -45,10 +48,16 @@ Deno.serve(async (req) => {
       return fail(req, 'A valid Idempotency-Key header is required', 400);
     }
 
-    const items = rawItems.map((item: { product_id?: unknown; quantity?: unknown }) => ({
-      product_id: typeof item.product_id === 'string' ? item.product_id : '',
-      quantity: Number(item.quantity),
-    }));
+    const items = rawItems.map((item: unknown) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) {
+        return { product_id: '', quantity: Number.NaN };
+      }
+      const row = item as Record<string, unknown>;
+      return {
+        product_id: typeof row.product_id === 'string' ? row.product_id : '',
+        quantity: Number(row.quantity),
+      };
+    });
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (items.some((item) => !uuidPattern.test(item.product_id)
       || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 50)) {
