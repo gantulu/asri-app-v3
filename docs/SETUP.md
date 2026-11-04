@@ -36,7 +36,8 @@ Supabase supplies `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Never expose s
 - Checkout requires an idempotency key; concurrent identical requests return the same order.
 - Each order can claim only one invoice creation attempt. Ambiguous timeouts enter review and are not automatically retried.
 - Payment retry creates a new order.
-- Callback signature is HMAC-SHA256 over `merchantCode + amount + merchantOrderId`.
+- Callback source IP must match `DUITKU_ALLOWED_IPS`; for POP Sandbox the official list is `182.23.85.11,182.23.85.12,103.177.101.187,103.177.101.188`.
+- Callback signature is HMAC-SHA256 over `merchantCode + amount + merchantOrderId`. Verify that the deployed Edge proxy supplies the original source through `cf-connecting-ip` or `x-real-ip`; otherwise configure the allowlist at the trusted ingress layer.
 - POP callback `resultCode=00` is paid and `01` is failed. Other callback codes require review. Redirect query parameters never update payment state.
 - Failed payment restores stock once. Unpaid orders expire after the 60-minute invoice window; pg_cron releases reserved stock.
 - The browser generates a cryptographically random 256-bit guest token before checkout and stores it with the idempotency key. The backend stores only its SHA-256 hash. The tracking page displays a copyable bearer token so the customer can use it on another device; customers must keep it private.
