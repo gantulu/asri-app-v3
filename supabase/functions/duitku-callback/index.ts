@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { clientAddress, equal, hash, hmac, textResponse } from '../_shared.ts';
+import { clientAddress, equal, hash, hmac, mapDuitkuCallbackStatus, textResponse } from '../_shared.ts';
 
 const db = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     if (!rate.data) return textResponse('Callback rate limit exceeded', 429);
 
     // Duitku POP callback contract: 00=Success, 01=Failed. Other values are review-only.
-    const status = resultCode === '00' ? 'paid' : resultCode === '01' ? 'failed' : 'needs_review';
+    const status = mapDuitkuCallbackStatus(resultCode);
     const payload = Object.fromEntries(form.entries());
     const { data, error } = await db.rpc('apply_duitku_callback', {
       p_order: order,
