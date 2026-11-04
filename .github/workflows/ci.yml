@@ -23,3 +23,17 @@ jobs:
         with:
           deno-version: v2.x
       - run: deno test --allow-env supabase/functions/tests
+
+  database-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase start
+      - run: supabase db reset
+      - run: supabase test db
+      - if: always()
+        run: supabase stop
