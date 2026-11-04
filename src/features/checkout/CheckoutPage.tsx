@@ -6,7 +6,7 @@ import { money } from '../../lib';
 import { useCart } from '../cart/store';
 
 type Customer = { customer_name: string; email: string; phone: string; address: string; city: string; postal_code: string };
-type CheckoutResult = { order_number?: string; guest_token?: string; payment_url?: string; error?: string; status_message?: string; payment_status?: string };
+type CheckoutResult = { order_number?: string; guest_token?: string; payment_url?: string; error?: string; status_message?: string; payment_status?: string; retry_new_order?: boolean };
 
 const fields: { key: keyof Customer; label: string; type?: string }[] = [
   { key: 'customer_name', label: 'Full name' },
