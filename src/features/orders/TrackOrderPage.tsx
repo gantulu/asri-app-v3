@@ -11,6 +11,7 @@ export function TrackOrderPage() {
   const [result, setResult] = useState<OrderStatus | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('asri:order');
@@ -45,6 +46,7 @@ export function TrackOrderPage() {
 
   return <main className="page narrow">
     <small>ORDER CARE</small><h1>Track your <i>order.</i></h1>
+    {token && <div className="tracking-credential"><small>PRIVATE TRACKING TOKEN — KEEP IT SECRET</small><code>{token}</code><button type="button" onClick={() => { void navigator.clipboard.writeText(token).then(() => setCopied(true)); }}>{copied ? 'Copied' : 'Copy token'}</button><p>Save this token if you need to track the order on another device.</p></div>}
     <form className="form" onSubmit={check}>
       <label>Order number<input required value={number} onChange={(event) => setNumber(event.target.value)} /></label>
       <label>Private tracking token<input required value={token} onChange={(event) => setToken(event.target.value)} /></label>
