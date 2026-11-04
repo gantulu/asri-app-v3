@@ -6,7 +6,10 @@ Modern, responsive online storefront built with **React, Vite, TypeScript, Tailw
 - Responsive storefront, product listing and product detail
 - Persistent shopping cart and guest checkout
 - Supabase PostgreSQL catalogue, orders, order items and payments
-- Server-side price/stock validation and stock reservation
+- Server-side price/stock validation and atomic stock reservation
+- Fixed Rp0 shipping for V1 (backend enforced)
+- Idempotent checkout and single-invoice claim per order
+- Payment timeout recovery, callback validation, and stock expiry
 - Duitku POP Sandbox invoice creation and signed callback
 - Private guest order tracking
 - IDR currency
@@ -22,4 +25,4 @@ See [docs/SETUP.md](docs/SETUP.md) for Supabase migration, Edge Function secrets
 Apply migrations with `supabase db push`. Optional starter catalogue: `supabase/seed.sql`.
 
 ## Important
-Payment credentials and Supabase service-role keys must remain in Supabase Edge Function secrets. Shipping currently defaults to zero until a trusted shipping policy is configured. Sandbox end-to-end verification and operational hardening are required before production.
+Payment credentials and Supabase service-role keys must remain in Supabase Edge Function secrets. V1 shipping is fixed to Rp0 by the backend. Configure exact CORS origins and Supabase Edge Function secrets before deployment. See [docs/IMPLEMENTATION_V1.md](docs/IMPLEMENTATION_V1.md) for transaction recovery, expiry scheduling, tests, and security notes. Sandbox end-to-end verification is required before production.
