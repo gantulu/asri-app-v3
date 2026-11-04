@@ -36,7 +36,7 @@
 - Set `APP_ORIGINS` to a comma-separated exact allowlist, for example `https://store.example.com,https://www.store.example.com`. `APP_ORIGIN` remains a single-origin fallback.
 - Never set a wildcard origin in production.
 - Edge Functions use service-role credentials server-side only.
-- Guest tokens are HMAC-derived from the idempotency key and API secret; only their SHA-256 hash is stored in PostgreSQL.
+- The browser generates a cryptographically random 256-bit guest token before the checkout request and persists it with the idempotency key. The Edge Function stores only its SHA-256 hash in PostgreSQL and returns the token for customer tracking. The customer can copy the token from the tracking page for use on another device.
 - The storefront persists the token in local browser storage to survive page reloads. It is still a bearer credential: customers should keep it private.
 - Rate limits are stored in PostgreSQL and keyed by request address plus email/order context. Confirm the trusted forwarding headers supplied by the deployed Supabase Edge proxy before production.
 - Duitku callback rate limiting is applied only after signature verification to avoid unauthenticated callers consuming callback quota.
