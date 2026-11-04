@@ -7,7 +7,7 @@ export function isOriginAllowed(req: Request): boolean {
   return configuredOrigins.includes(origin);
 }
 
-export function corsFor(req: Request): HeadersInit {
+export function corsFor(req: Request): Record<string, string> {
   const origin = req.headers.get('origin');
   const headers: Record<string, string> = {
     'Access-Control-Allow-Headers': 'authorization, apikey, content-type, idempotency-key, x-client-info, x-supabase-api-version',
