@@ -14,15 +14,33 @@ export function TrackOrderPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    let active = true;
     const saved = localStorage.getItem('asri:order');
-    if (!saved) return;
+    if (!saved) return () => { active = false; };
     try {
       const parsed = JSON.parse(saved) as { order_number?: string; guest_token?: string };
-      setNumber(parsed.order_number ?? '');
-      setToken(parsed.guest_token ?? '');
+      const savedNumber = parsed.order_number ?? '';
+      const savedToken = parsed.guest_token ?? '';
+      setNumber(savedNumber);
+      setToken(savedToken);
+      if (db && savedNumber && savedToken) {
+        setBusy(true);
+        db.functions.invoke<OrderStatus>('order-status', {
+          body: { order_number: savedNumber, guest_token: savedToken },
+        }).then(({ data, error: invokeError }) => {
+          if (!active) return;
+          if (invokeError || !data) setError(invokeError?.message ?? 'Could not retrieve order status');
+          else setResult(data);
+        }).catch(() => {
+          if (active) setError('Could not retrieve order status');
+        }).finally(() => {
+          if (active) setBusy(false);
+        });
+      }
     } catch {
       localStorage.removeItem('asri:order');
     }
+    return () => { active = false; };
   }, []);
 
   async function check(event: FormEvent<HTMLFormElement>) {
