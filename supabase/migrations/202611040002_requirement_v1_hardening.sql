@@ -174,6 +174,14 @@ begin
     return jsonb_build_object('state','ready','payment_url',pay.payment_url);
   end if;
   if pay.invoice_state='requesting' then
+    if pay.invoice_attempt_started_at < now() - interval '2 minutes' then
+      update public.payments set invoice_state='unknown',status='needs_review',
+        invoice_error='Invoice request exceeded its processing lease',updated_at=now()
+        where id=pay.id;
+      update public.orders set payment_status='needs_review',order_status='payment_review',updated_at=now()
+        where id=pay.order_id;
+      return jsonb_build_object('state','unknown');
+    end if;
     return jsonb_build_object('state','in_progress');
   end if;
   if pay.invoice_state in ('unknown','needs_review','failed') then
@@ -339,7 +347,7 @@ begin
       and o.order_status in ('pending_payment','payment_review')
       and o.invoice_expires_at is not null and o.invoice_expires_at <= now()
       and p.status in ('creating','pending','needs_review')
-      and p.invoice_state in ('ready','unknown','needs_review')
+      and p.invoice_state in ('requesting','ready','unknown','needs_review')
       and o.stock_restored_at is null
       and coalesce(p.callback_payload ? 'resultCode', false) = false
     for update of o,p skip locked
@@ -368,8 +376,15 @@ create index if not exists orders_invoice_expiry_idx
 create index if not exists payments_order_status_idx on public.payments(order_id,status);
 
 -- pg_cron is supported by Supabase. The scheduled task releases stock after the 60-minute invoice window.
-create extension if not exists pg_cron with schema pg_catalog;
-do $$
+do $
+begin
+  execute 'create extension if not exists pg_cron with schema pg_catalog';
+exception when feature_not_supported or insufficient_privilege then
+  raise notice 'pg_cron extension unavailable; configure expire_unpaid_orders() in Supabase Cron before accepting orders.';
+end;
+$;
+
+do $
 begin
   perform cron.unschedule(jobid) from cron.job where jobname='asri-expire-unpaid-orders';
   perform cron.schedule('asri-expire-unpaid-orders','*/5 * * * *',
@@ -377,7 +392,7 @@ begin
 exception when undefined_table or insufficient_privilege then
   raise notice 'pg_cron scheduling unavailable; configure expire_unpaid_orders() in Supabase Cron before accepting orders.';
 end;
-$$;
+$;
 
 revoke all on function public.consume_rate_limit(text,text,integer,integer),
   public.create_store_order(text,text,text,text,text,jsonb,bigint,jsonb,text,text),
