@@ -331,7 +331,7 @@ begin
       and p.status in ('creating','pending','needs_review')
       and p.invoice_state in ('ready','unknown','needs_review')
       and o.stock_restored_at is null
-      and not (p.callback_payload ? 'resultCode')
+      and coalesce(p.callback_payload ? 'resultCode', false) = false
     for update of o,p skip locked
   ), restored as (
     update public.products pr set stock=pr.stock+items.qty
