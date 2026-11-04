@@ -28,6 +28,7 @@ Deno.serve(async (req) => {
     const address = typeof body.address === 'string' ? body.address.trim() : '';
     const city = typeof body.city === 'string' ? body.city.trim() : '';
     const postalCode = typeof body.postal_code === 'string' ? body.postal_code.trim() : '';
+    const token = typeof body.guest_token === 'string' ? body.guest_token.trim() : '';
     const rawItems = body.items;
     const idempotencyKey = req.headers.get('idempotency-key') ?? '';
 
@@ -46,6 +47,9 @@ Deno.serve(async (req) => {
     }
     if (!/^[A-Za-z0-9_-]{16,128}$/.test(idempotencyKey)) {
       return fail(req, 'A valid Idempotency-Key header is required', 400);
+    }
+    if (!/^[a-f0-9]{64}$/i.test(token)) {
+      return fail(req, 'A valid 256-bit guest token is required', 400);
     }
 
     const items = rawItems.map((item: unknown) => {
@@ -82,11 +86,11 @@ Deno.serve(async (req) => {
     if (!merchantCode || !apiKey || !callbackUrl) return fail(req, 'Duitku is not configured', 503);
 
     // V1 shipping policy is fixed at Rp0. Ignore any client-supplied shipping amount.
-    const token = await hmac(apiKey, `guest:${idempotencyKey}`);
     const orderNumber = `ASR-${crypto.randomUUID().replaceAll('-', '').slice(0, 16).toUpperCase()}`;
     const payloadHash = await hash(JSON.stringify({
       items,
       customer: [customerName, email, phone, address, city, postalCode],
+      guest_token: token,
       shipping_cost: 0,
     }));
 
@@ -126,11 +130,11 @@ Deno.serve(async (req) => {
       return json(req, { order_number: order.order_number, guest_token: token, payment_url: claim.payment_url });
     }
     if (claim?.state !== 'claimed') {
-      if (claim?.state === 'failed') {
+      if (claim?.state === 'failed' || claim?.state === 'expired') {
         return json(req, {
           order_number: order.order_number, guest_token: token, payment_status: 'failed',
           retry_new_order: true,
-          status_message: 'Invoice creation failed. The reserved stock was released; retry checkout to create a new order.',
+          status_message: 'This invoice is no longer payable. Reserved stock was released; retry checkout to create a new order.',
         });
       }
       const status = claim?.state === 'in_progress' ? 202 : 409;
