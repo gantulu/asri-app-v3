@@ -130,7 +130,13 @@ Deno.serve(async (req) => {
       return json(req, { order_number: order.order_number, guest_token: token, payment_url: claim.payment_url });
     }
     if (claim?.state !== 'claimed') {
-      if (claim?.state === 'failed' || claim?.state === 'expired') {
+      if (claim?.state === 'paid') {
+      return json(req, {
+        order_number: order.order_number, guest_token: token, payment_status: 'paid',
+        status_message: 'Payment has already been confirmed.',
+      });
+    }
+    if (claim?.state === 'failed' || claim?.state === 'expired') {
         return json(req, {
           order_number: order.order_number, guest_token: token, payment_status: 'failed',
           retry_new_order: true,
