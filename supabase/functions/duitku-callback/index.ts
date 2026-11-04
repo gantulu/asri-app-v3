@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { clientAddress, equal, hash, hmac, mapDuitkuCallbackStatus, textResponse } from '../_shared.ts';
+import { clientAddress, equal, hash, hmac, mapDuitkuCallbackStatus, textResponse, trustedClientAddress } from '../_shared.ts';
 
 const db = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -19,7 +19,13 @@ Deno.serve(async (req) => {
     const resultCode = value('resultCode');
     const merchantCode = Deno.env.get('DUITKU_MERCHANT_CODE');
     const apiKey = Deno.env.get('DUITKU_API_KEY');
+    const sourceIp = trustedClientAddress(req);
+    const allowedIps = (Deno.env.get('DUITKU_ALLOWED_IPS') ?? '')
+      .split(',').map((ip) => ip.trim()).filter(Boolean);
 
+    if (!sourceIp || !allowedIps.includes(sourceIp)) {
+      return textResponse('Callback source IP is not allowed', 403);
+    }
     if (!merchantCode || !apiKey || merchant !== merchantCode || !amountText
       || !/^\d+$/.test(amountText) || !Number.isSafeInteger(Number(amountText))
       || !order || order.length > 100 || !reference || reference.length > 150
