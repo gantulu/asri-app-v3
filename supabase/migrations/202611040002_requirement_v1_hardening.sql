@@ -170,6 +170,10 @@ declare pay public.payments%rowtype;
 begin
   select * into pay from public.payments where merchant_order_id=p_order for update;
   if not found then return jsonb_build_object('state','not_found'); end if;
+  if pay.status='paid' then return jsonb_build_object('state','paid'); end if;
+  if pay.status='failed' then return jsonb_build_object('state','failed'); end if;
+  if pay.status='expired' then return jsonb_build_object('state','expired'); end if;
+  if pay.status='needs_review' then return jsonb_build_object('state','needs_review'); end if;
   if pay.payment_url is not null and pay.duitku_reference is not null then
     return jsonb_build_object('state','ready','payment_url',pay.payment_url);
   end if;
