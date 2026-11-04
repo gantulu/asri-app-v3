@@ -30,7 +30,8 @@ export function CheckoutPage() {
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [orderReady, setOrderReady] = useState(false);\n  const [orderOutcome, setOrderOutcome] = useState('');
+  const [orderReady, setOrderReady] = useState(false);
+  const [orderOutcome, setOrderOutcome] = useState('');
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.qty, 0);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
