@@ -374,15 +374,15 @@ create index if not exists orders_invoice_expiry_idx
 create index if not exists payments_order_status_idx on public.payments(order_id,status);
 
 -- pg_cron is supported by Supabase. The scheduled task releases stock after the 60-minute invoice window.
-do $
+do $$
 begin
   execute 'create extension if not exists pg_cron with schema pg_catalog';
 exception when feature_not_supported or insufficient_privilege or object_not_in_prerequisite_state then
   raise notice 'pg_cron extension unavailable; configure expire_unpaid_orders() in Supabase Cron before accepting orders.';
 end;
-$;
+$$;
 
-do $
+do $$
 begin
   perform cron.unschedule(jobid) from cron.job where jobname='asri-expire-unpaid-orders';
   perform cron.schedule('asri-expire-unpaid-orders','*/5 * * * *',
@@ -390,7 +390,7 @@ begin
 exception when undefined_table or invalid_schema_name or insufficient_privilege then
   raise notice 'pg_cron scheduling unavailable; configure expire_unpaid_orders() in Supabase Cron before accepting orders.';
 end;
-$;
+$$;
 
 revoke all on function public.consume_rate_limit(text,text,integer,integer),
   public.create_store_order(text,text,text,text,text,jsonb,bigint,jsonb,text,text),
