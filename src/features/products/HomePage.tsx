@@ -7,6 +7,7 @@ import type { Product } from '../cart/store';
 
 export function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   useEffect(() => {
     let active = true;
