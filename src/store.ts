@@ -1,1 +1,2 @@
-import {create} from 'zustand';import {persist} from 'zustand/middleware';export type Product={id:string;slug:string;name:string;description:string;price:number;image_url:string;category:string;stock:number};type Cart={items:{product:Product;qty:number}[];add:(p:Product)=>void;remove:(id:string)=>void;clear:()=>void};export const useCart=create<Cart>()(persist((set)=>({items:[],add:(p)=>set(s=>({items:s.items.some(i=>i.product.id===p.id)?s.items.map(i=>i.product.id===p.id?{...i,qty:Math.min(i.qty+1,p.stock)}:i):[...s.items,{product:p,qty:1}]})),remove:(id)=>set(s=>({items:s.items.filter(i=>i.product.id!==id)})),clear:()=>set({items:[]})}),{name:'asri-cart-v1'}));
+export { useCart } from './features/cart/store';
+export type { Product } from './features/cart/store';
