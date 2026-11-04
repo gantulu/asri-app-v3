@@ -31,7 +31,7 @@ alter table public.payments
   drop constraint if exists payments_invoice_state_v1_check;
 alter table public.payments
   add constraint payments_invoice_state_v1_check
-  check (invoice_state in ('creating','requesting','ready','unknown','failed','needs_review')) not valid;
+  check (invoice_state in ('creating','requesting','ready','unknown','failed','expired','needs_review')) not valid;
 alter table public.payments validate constraint payments_invoice_state_v1_check;
 
 alter table public.orders
@@ -184,7 +184,7 @@ begin
     end if;
     return jsonb_build_object('state','in_progress');
   end if;
-  if pay.invoice_state in ('unknown','needs_review','failed') then
+  if pay.invoice_state in ('unknown','needs_review','failed','expired') then
     return jsonb_build_object('state',pay.invoice_state);
   end if;
   if pay.invoice_state <> 'creating' then
@@ -364,7 +364,7 @@ begin
     stock_restored_at=coalesce(stock_restored_at,now()),updated_at=now()
   from expired e where o.id=e.id and o.stock_restored_at is null;
   get diagnostics changed = row_count;
-  update public.payments p set status='expired',updated_at=now()
+  update public.payments p set status='expired',invoice_state='expired',updated_at=now()
     from public.orders o where o.id=p.order_id and o.payment_status='expired'
       and p.status in ('creating','pending','needs_review');
   return changed;
