@@ -70,3 +70,9 @@ export function validEmail(value: unknown): value is string {
   return typeof value === 'string' && value.length <= 255
     && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
+
+export function mapDuitkuCallbackStatus(code: string): 'paid' | 'failed' | 'needs_review' {
+  if (code === '00') return 'paid';
+  if (code === '01') return 'failed';
+  return 'needs_review';
+}
