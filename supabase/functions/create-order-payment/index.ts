@@ -117,13 +117,20 @@ Deno.serve(async (req) => {
       return json(req, { order_number: order.order_number, guest_token: token, payment_url: claim.payment_url });
     }
     if (claim?.state !== 'claimed') {
+      if (claim?.state === 'failed') {
+        return json(req, {
+          order_number: order.order_number, guest_token: token, payment_status: 'failed',
+          retry_new_order: true,
+          status_message: 'Invoice creation failed. The reserved stock was released; retry checkout to create a new order.',
+        });
+      }
       const status = claim?.state === 'in_progress' ? 202 : 409;
       return json(req, {
         order_number: order.order_number,
         guest_token: token,
         payment_status: claim?.state ?? 'needs_review',
-        error: claim?.state === 'in_progress'
-          ? 'Invoice creation is still in progress'
+        status_message: claim?.state === 'in_progress'
+          ? 'Invoice creation is still in progress.'
           : 'This order requires payment review. Do not create another invoice for this order.',
       }, status);
     }
@@ -173,7 +180,11 @@ Deno.serve(async (req) => {
         p_order: order.order_number, p_attempt: attemptId,
         p_reason: typeof invoice.statusMessage === 'string' ? invoice.statusMessage : 'Duitku rejected invoice',
       });
-      return fail(req, 'Duitku rejected invoice creation. Start a new checkout to retry.', 502);
+      return json(req, {
+        order_number: order.order_number, guest_token: token, payment_status: 'failed',
+        retry_new_order: true,
+        status_message: 'Duitku rejected invoice creation. Reserved stock was released; retry checkout to create a new order.',
+      });
     }
 
     if (!providerResponse.ok || invoice.statusCode !== '00'
