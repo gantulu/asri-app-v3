@@ -42,6 +42,12 @@ alter table public.orders
 alter table public.orders validate constraint orders_status_v1_check;
 
 alter table public.orders
+  drop constraint if exists orders_shipping_zero_v1_check;
+alter table public.orders
+  add constraint orders_shipping_zero_v1_check check (shipping_cost = 0) not valid;
+alter table public.orders validate constraint orders_shipping_zero_v1_check;
+
+alter table public.orders
   drop constraint if exists orders_payment_status_v1_check;
 alter table public.orders
   add constraint orders_payment_status_v1_check
@@ -324,6 +330,7 @@ begin
       and o.invoice_expires_at is not null and o.invoice_expires_at <= now()
       and p.status in ('creating','pending','needs_review')
       and p.invoice_state in ('ready','unknown','needs_review')
+      and o.stock_restored_at is null
       and not (p.callback_payload ? 'resultCode')
     for update of o,p skip locked
   ), restored as (
@@ -351,7 +358,7 @@ create index if not exists orders_invoice_expiry_idx
 create index if not exists payments_order_status_idx on public.payments(order_id,status);
 
 -- pg_cron is supported by Supabase. The scheduled task releases stock after the 60-minute invoice window.
-create extension if not exists pg_cron with schema extensions;
+create extension if not exists pg_cron with schema pg_catalog;
 do $$
 begin
   perform cron.unschedule(jobid) from cron.job where jobname='asri-expire-unpaid-orders';
