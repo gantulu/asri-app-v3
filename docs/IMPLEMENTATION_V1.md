@@ -39,7 +39,8 @@
 - The browser generates a cryptographically random 256-bit guest token before the checkout request and persists it with the idempotency key. The Edge Function stores only its SHA-256 hash in PostgreSQL and returns the token for customer tracking. The customer can copy the token from the tracking page for use on another device.
 - The storefront persists the token in local browser storage to survive page reloads. It is still a bearer credential: customers should keep it private.
 - Rate limits are stored in PostgreSQL and keyed by request address plus email/order context. Confirm the trusted forwarding headers supplied by the deployed Supabase Edge proxy before production.
-- Duitku callback rate limiting is applied only after signature verification to avoid unauthenticated callers consuming callback quota.
+- Callback source IP is checked against `DUITKU_ALLOWED_IPS` using trusted edge-proxy headers; callback rate limiting is applied only after source and signature verification.
+- POP Sandbox source IPs from official documentation: `182.23.85.11`, `182.23.85.12`, `103.177.101.187`, and `103.177.101.188`. Re-check the official list before changing gateway environment.
 
 ## Duitku POP callback mapping
 
@@ -69,6 +70,7 @@ The pgTAP database suite verifies migration columns, rate limiting, same-key ide
 - `DUITKU_MERCHANT_CODE`
 - `DUITKU_API_KEY`
 - `DUITKU_CALLBACK_URL`
+- `DUITKU_ALLOWED_IPS` — required comma-separated provider callback IP allowlist
 - `APP_ORIGINS` (recommended) or `APP_ORIGIN`
 - Optional `DUITKU_RETURN_URL`
 
