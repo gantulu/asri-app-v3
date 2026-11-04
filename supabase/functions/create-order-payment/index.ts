@@ -200,15 +200,36 @@ Deno.serve(async (req) => {
       });
       return json(req, {
         order_number: order.order_number, guest_token: token, payment_status: 'needs_review',
-        error: 'Invoice was created but requires payment review. Do not retry this order.',
+        status_message: 'Invoice was created but requires payment review. Do not retry this order.',
       }, 202);
     }
 
+    if (completed === 'READY') {
+      return json(req, {
+        order_number: order.order_number,
+        guest_token: token,
+        payment_url: invoice.paymentUrl,
+      });
+    }
+
+    const { data: finalOrder } = await db.from('orders')
+      .select('payment_status').eq('id', order.id).maybeSingle();
+    if (finalOrder?.payment_status === 'paid') {
+      return json(req, {
+        order_number: order.order_number, guest_token: token, payment_status: 'paid',
+        status_message: 'Payment has already been confirmed.',
+      });
+    }
+    if (finalOrder?.payment_status === 'failed') {
+      return json(req, {
+        order_number: order.order_number, guest_token: token, payment_status: 'failed',
+        status_message: 'Payment failed. Start a new checkout to try again.',
+      });
+    }
     return json(req, {
-      order_number: order.order_number,
-      guest_token: token,
-      payment_url: invoice.paymentUrl,
-    });
+      order_number: order.order_number, guest_token: token, payment_status: 'needs_review',
+      status_message: 'The payment result needs review. Use order tracking for updates.',
+    }, 202);
   } catch {
     return fail(req, 'Checkout failed', 500);
   }
