@@ -12,6 +12,7 @@ React, Vite, TypeScript, Supabase and Duitku POP Sandbox. Guest checkout; IDR on
 - `DUITKU_MERCHANT_CODE`
 - `DUITKU_API_KEY`
 - `DUITKU_CALLBACK_URL`
+- `DUITKU_ALLOWED_IPS` — required comma-separated callback source IP allowlist
 - `APP_ORIGINS` — comma-separated exact allowed origins (recommended)
 - `APP_ORIGIN` — single-origin fallback
 - Optional: `DUITKU_RETURN_URL`
