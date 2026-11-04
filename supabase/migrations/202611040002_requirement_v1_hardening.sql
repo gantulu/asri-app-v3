@@ -42,12 +42,6 @@ alter table public.orders
 alter table public.orders validate constraint orders_status_v1_check;
 
 alter table public.orders
-  drop constraint if exists orders_shipping_zero_v1_check;
-alter table public.orders
-  add constraint orders_shipping_zero_v1_check check (shipping_cost = 0) not valid;
--- NOT VALID preserves historical order snapshots while enforcing Rp0 on all new orders.
-
-alter table public.orders
   drop constraint if exists orders_payment_status_v1_check;
 alter table public.orders
   add constraint orders_payment_status_v1_check
