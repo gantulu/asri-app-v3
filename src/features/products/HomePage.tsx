@@ -11,7 +11,8 @@ export function HomePage() {
   useEffect(() => {
     let active = true;
     loadProducts().then((items) => { if (active) setProducts(items.slice(0, 4)); })
-      .catch(() => { if (active) setError('The collection is temporarily unavailable.'); });
+      .catch(() => { if (active) setError('The collection is temporarily unavailable.'); })
+      .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
   return (
@@ -32,8 +33,9 @@ export function HomePage() {
       <div className="ticker">GOOD THINGS TAKE THOUGHT　✳　MADE FOR YOUR EVERYDAY　✳　LESS, BUT BETTER　✳</div>
       <section className="section">
         <div className="sectionhead"><div><small>THE EDIT</small><h2>Find your <i>everyday.</i></h2></div><Link to="/products">View all pieces ↗</Link></div>
+        {loading && <p role="status">Loading the collection…</p>}
         {error && <p className="error" role="alert">{error}</p>}
-        {!error && products.length === 0 && <p>Loading the collection…</p>}
+        {!loading && !error && products.length === 0 && <p>No products are available right now.</p>}
         <div className="grid">{products.map((product) => <ProductCard key={product.id} product={product} />)}</div>
       </section>
       <section className="story" id="story">
