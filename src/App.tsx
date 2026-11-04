@@ -1,21 +1,57 @@
-import {useEffect,useState} from 'react';import type {FormEvent} from 'react';
-import {Link,Route,Routes,useParams} from 'react-router-dom';
-import {ArrowRight,ArrowUpRight,ShoppingBag,Plus,Leaf,ShieldCheck,Truck} from 'lucide-react';
-import {db,configured,money} from './lib';
-import {useCart,type Product} from './store';
-const sample:Product[]=[
-{id:'demo1',slug:'linen-shirt',name:'Linen Everyday Shirt',description:'A relaxed linen shirt made for everyday movement.',price:289000,image_url:'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=900&q=85',category:'Apparel',stock:18},
-{id:'demo2',slug:'canvas-weekender',name:'Canvas Weekender',description:'A thoughtful carry-all for everyday and away days.',price:425000,image_url:'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=900&q=85',category:'Accessories',stock:12},
-{id:'demo3',slug:'ceramic-set',name:'Ceramic Coffee Set',description:'Handmade ceramics for slower coffee rituals.',price:195000,image_url:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=900&q=85',category:'Living',stock:24},
-{id:'demo4',slug:'daily-tote',name:'Daily Essential Tote',description:'A minimal tote for the things that matter.',price:159000,image_url:'https://images.unsplash.com/photo-1544816155-12df9643f363?w=900&q=85',category:'Accessories',stock:30}];
-async function load():Promise<Product[]>{if(!db)return sample;const {data,error}=await db.from('products').select('id,slug,name,description,price,image_url,category,stock').eq('is_active',true);if(error)throw error;return(data??[]) as Product[]}
-function Header(){const n=useCart(s=>s.items.reduce((a,i)=>a+i.qty,0));return <header><div className="top">A little better, every day — thoughtful essentials for you</div><nav><Link className="logo" to="/">asri<span>.</span></Link><div><Link to="/products">Shop all</Link><a href="/#story">Our story</a><a href="/#values">Our values</a></div><Link to="/cart" className="bag"><ShoppingBag size={18}/>{n}</Link></nav></header>}
-function Card({p}:{p:Product}){const add=useCart(s=>s.add);return <article className="card"><Link to={'/products/'+p.slug} className="photo"><img src={p.image_url} alt={p.name}/><span><ArrowUpRight/></span></Link><div className="cardrow"><div><small>{p.category}</small><Link to={'/products/'+p.slug}>{p.name}</Link><b>{money(p.price)}</b></div><button onClick={()=>add(p)} aria-label="Add to bag"><Plus/></button></div></article>}
-function Home(){const [list,setList]=useState(sample);useEffect(()=>{load().then(setList).catch(console.error)},[]);return <><section className="hero"><div><small>THE ART OF EVERYDAY</small><h1>Make room for<br/><i>the good</i> things.</h1><p>Thoughtful essentials, considered details, and little things that make every day feel a little more like yours.</p><Link className="button" to="/products">Explore collection <ArrowUpRight size={17}/></Link><small className="foot">01 / 03　 Objects for a life well lived</small></div><figure><img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1400&q=90" alt="Warm lifestyle boutique"/><figcaption>CURATED FOR THE EVERYDAY ↗</figcaption></figure></section><div className="ticker">GOOD THINGS TAKE THOUGHT　✳　MADE FOR YOUR EVERYDAY　✳　LESS, BUT BETTER　✳</div><section className="section"><div className="sectionhead"><div><small>THE EDIT</small><h2>Find your <i>everyday.</i></h2></div><Link to="/products">View all pieces ↗</Link></div><div className="grid">{list.slice(0,4).map(p=><Card key={p.id} p={p}/>)}</div></section><section className="story" id="story"><img src="https://images.unsplash.com/photo-1449247709967-d4461a6a6103?w=1200&q=85" alt="Sunlit home"/><div><small>A NOTE FROM ASRI</small><h2>Less noise.<br/><i>More meaning.</i></h2><p>We believe the things around us should earn their place. Honest materials, useful forms, and details that feel right — not just for a moment, but for years to come.</p></div></section><section className="values" id="values"><small>THE THINGS WE VALUE</small><div><article><Leaf/><h3>Considered by nature</h3><p>Thoughtful materials and details, chosen with care.</p></article><article><ShieldCheck/><h3>Made to matter</h3><p>Useful objects that bring joy to daily rituals.</p></article><article><Truck/><h3>Quality over quantity</h3><p>Fewer, better things. Always.</p></article></div></section></>}
-function Shop(){const [list,setList]=useState(sample);useEffect(()=>{load().then(setList).catch(console.error)},[]);return <main className="page"><small>THE COLLECTION</small><h1>Everyday, <i>elevated.</i></h1><p>Useful things, beautiful details. Find the pieces that feel like you.</p><div className="grid">{list.map(p=><Card key={p.id} p={p}/>)}</div></main>}
-function Detail(){const {slug}=useParams();const [p,setP]=useState<Product|null>(null);const add=useCart(s=>s.add);useEffect(()=>{load().then(ps=>setP(ps.find(x=>x.slug===slug)??null))},[slug]);if(!p)return <main className="page">Product not found.</main>;return <main className="detail"><img src={p.image_url} alt={p.name}/><div><Link to="/products">← Back to collection</Link><small>{p.category}</small><h1>{p.name}</h1><b>{money(p.price)}</b><p>{p.description}</p><p>{p.stock} available</p><button className="button" onClick={()=>add(p)}>Add to bag <ShoppingBag/></button></div></main>}
-function Cart(){const items=useCart(s=>s.items),remove=useCart(s=>s.remove);const total=items.reduce((n,i)=>n+i.product.price*i.qty,0);return <main className="page narrow"><small>YOUR BAG</small><h1>A few good <i>things.</i></h1>{items.length===0?<p>Your bag is empty. <Link to="/products">Explore collection →</Link></p>:<><div className="cartlist">{items.map(i=><article key={i.product.id}><img src={i.product.image_url} alt=""/><div><b>{i.product.name}</b><span>{i.qty} × {money(i.product.price)}</span></div><button onClick={()=>remove(i.product.id)}>Remove</button></article>)}</div><div className="total"><b>Subtotal</b><strong>{money(total)}</strong><Link className="button" to="/checkout">Continue to checkout <ArrowRight/></Link></div></>}</main>}
-function Checkout(){const items=useCart(s=>s.items),clear=useCart(s=>s.clear);const [v,setV]=useState({customer_name:'',email:'',phone:'',address:'',city:'',postal_code:''});const [err,setErr]=useState(''),[busy,setBusy]=useState(false);const update=(k:string,x:string)=>setV(s=>({...s,[k]:x}));async function send(e:FormEvent){e.preventDefault();setBusy(true);try{if(!db)throw Error('Supabase belum dikonfigurasi.');let idem=sessionStorage.getItem('asri:checkout-idem');if(!idem){idem=crypto.randomUUID();sessionStorage.setItem('asri:checkout-idem',idem)}const {data,error}=await db.functions.invoke('create-order-payment',{body:{...v,shipping_cost:0,items:items.map(i=>({product_id:i.product.id,quantity:i.qty}))},headers:{'Idempotency-Key':idem}});if(error||!data?.payment_url)throw Error(data?.error??error?.message??'Checkout gagal');sessionStorage.setItem('asri:order',JSON.stringify({order_number:data.order_number,guest_token:data.guest_token}));sessionStorage.removeItem('asri:checkout-idem');clear();location.assign(data.payment_url)}catch(e){setErr(e instanceof Error?e.message:'Checkout gagal');setBusy(false)}}return <main className="page narrow"><small>CHECKOUT</small><h1>Almost <i>yours.</i></h1><form className="form" onSubmit={send}><h2>Contact & delivery</h2>{Object.entries({customer_name:'Full name',email:'Email',phone:'Phone',address:'Address',city:'City',postal_code:'Postal code'}).map(([k,label])=><label key={k}>{label}<input required type={k==='email'?'email':'text'} value={v[k as keyof typeof v]} onChange={e=>update(k,e.target.value)}/></label>)}{err&&<p className="error">{err}</p>}<button className="button" disabled={busy||!configured}>{busy?'Preparing payment…':'Continue to payment →'}</button>{!configured&&<small>Set Supabase environment variables and deploy Edge Functions to enable checkout.</small>}</form></main>}
-function Track(){const [number,setNumber]=useState(''),[token,setToken]=useState(''),[result,setResult]=useState<any>(null),[error,setError]=useState('');useEffect(()=>{const s=sessionStorage.getItem('asri:order');if(s){const d=JSON.parse(s);setNumber(d.order_number);setToken(d.guest_token)}},[]);async function check(e:FormEvent){e.preventDefault();if(!db){setError('Supabase belum dikonfigurasi');return}const {data,error}=await db.functions.invoke('order-status',{body:{order_number:number,guest_token:token}});if(error||data?.error)setError(data?.error??error?.message);else setResult(data)}return <main className="page narrow"><small>ORDER CARE</small><h1>Track your <i>order.</i></h1><form className="form" onSubmit={check}><label>Order number<input required value={number} onChange={e=>setNumber(e.target.value)}/></label><label>Private tracking token<input required value={token} onChange={e=>setToken(e.target.value)}/></label><button className="button">Track order</button></form>{error&&<p className="error">{error}</p>}{result&&<p className="result">{result.order_number} · {result.order_status} · {result.payment_status} · {money(result.total_amount)}</p>}</main>}
-function Footer(){return <footer><Link className="logo" to="/">asri<span>.</span></Link><p>Thoughtful essentials for everyday living.</p><div><Link to="/products">Shop all</Link><Link to="/track">Track order</Link><a href="mailto:hello@asri.store">Contact</a></div><small>© 2026 Asri. Made for everyday.</small></footer>}
-export default function App(){return <><Header/><Routes><Route path="/" element={<Home/>}/><Route path="/products" element={<Shop/>}/><Route path="/products/:slug" element={<Detail/>}/><Route path="/cart" element={<Cart/>}/><Route path="/checkout" element={<Checkout/>}/><Route path="/track" element={<Track/>}/><Route path="/payment/return" element={<Track/>}/></Routes><Footer/></>}
+import { Link, Route, Routes } from 'react-router-dom';
+import { ShoppingBag } from 'lucide-react';
+import { useCart } from './features/cart/store';
+import { HomePage } from './features/products/HomePage';
+import { ShopPage } from './features/products/ShopPage';
+import { ProductDetailPage } from './features/products/ProductDetailPage';
+import { CartPage } from './features/cart/CartPage';
+import { CheckoutPage } from './features/checkout/CheckoutPage';
+import { TrackOrderPage } from './features/orders/TrackOrderPage';
+
+function Header() {
+  const count = useCart((state) => state.items.reduce((sum, item) => sum + item.qty, 0));
+  return (
+    <header>
+      <div className="top">A little better, every day — thoughtful essentials for you</div>
+      <nav>
+        <Link className="logo" to="/">asri<span>.</span></Link>
+        <div><Link to="/products">Shop all</Link><a href="/#story">Our story</a><a href="/#values">Our values</a></div>
+        <Link to="/cart" className="bag" aria-label={`Shopping bag, ${count} items`}><ShoppingBag size={18} />{count}</Link>
+      </nav>
+    </header>
+  );
+}
+
+function Footer() {
+  return (
+    <footer>
+      <Link className="logo" to="/">asri<span>.</span></Link>
+      <p>Thoughtful essentials for everyday living.</p>
+      <div><Link to="/products">Shop all</Link><Link to="/track">Track order</Link><a href="mailto:hello@asri.store">Contact</a></div>
+      <small>© 2026 Asri. Made for everyday.</small>
+    </footer>
+  );
+}
+
+function NotFound() {
+  return <main className="page"><h1>Page not found.</h1><Link to="/">Return home →</Link></main>;
+}
+
+export default function App() {
+  return (
+    <>
+      <Header />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/products" element={<ShopPage />} />
+        <Route path="/products/:slug" element={<ProductDetailPage />} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/track" element={<TrackOrderPage />} />
+        <Route path="/payment/return" element={<TrackOrderPage />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <Footer />
+    </>
+  );
+}
