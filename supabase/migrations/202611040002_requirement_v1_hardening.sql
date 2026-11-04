@@ -284,8 +284,16 @@ begin
       where id=o.id;
     return 'REFERENCE_MISMATCH';
   end if;
-  if pay.status='paid' then return 'ALREADY_PAID'; end if;
-  if pay.status='needs_review' or pay.invoice_state='needs_review' then return 'REVIEW'; end if;
+  if pay.status='paid' then
+    if p_status='paid' then return 'ALREADY_PAID'; end if;
+    update public.payments set status='needs_review',invoice_state='needs_review',
+      callback_payload=p_payload,updated_at=now() where id=pay.id;
+    update public.orders set payment_status='needs_review',order_status='payment_review',updated_at=now()
+      where id=o.id;
+    return 'CONFLICT_REVIEW';
+  end if;
+  if pay.status='failed' and p_status='failed' then return 'ALREADY_FAILED'; end if;
+  if pay.status='expired' and p_status='failed' then return 'ALREADY_EXPIRED'; end if;
   if pay.status in ('failed','expired') and p_status='paid' then
     update public.payments set status='needs_review',invoice_state='needs_review',
       callback_payload=p_payload,updated_at=now() where id=pay.id;
@@ -293,6 +301,7 @@ begin
       where id=o.id;
     return 'CONFLICT_REVIEW';
   end if;
+  if pay.status='needs_review' or pay.invoice_state='needs_review' then return 'REVIEW'; end if;
   if p_status='paid' then
     update public.payments set status='paid',callback_payload=p_payload,updated_at=now() where id=pay.id;
     update public.orders set payment_status='paid',order_status='processing',updated_at=now() where id=o.id;
@@ -322,6 +331,7 @@ create or replace function public.expire_unpaid_orders()
 returns integer language plpgsql security definer set search_path=public,pg_temp as $$
 declare changed integer := 0;
 begin
+  delete from public.rate_limit_buckets where window_started_at < now() - interval '1 day';
   with expired as (
     select o.id from public.orders o
     join public.payments p on p.order_id=o.id
