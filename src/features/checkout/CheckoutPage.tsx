@@ -6,7 +6,7 @@ import { money } from '../../lib';
 import { useCart } from '../cart/store';
 
 type Customer = { customer_name: string; email: string; phone: string; address: string; city: string; postal_code: string };
-type CheckoutResult = { order_number?: string; guest_token?: string; payment_url?: string; error?: string };
+type CheckoutResult = { order_number?: string; guest_token?: string; payment_url?: string; error?: string; status_message?: string; payment_status?: string };
 
 const fields: { key: keyof Customer; label: string; type?: string }[] = [
   { key: 'customer_name', label: 'Full name' },
@@ -63,7 +63,7 @@ export function CheckoutPage() {
         window.location.assign(data.payment_url);
         return;
       }
-      setError(data.error ?? 'Order created but payment needs review. Use the tracking link to check its status.');
+      setError(data.error ?? data.status_message ?? 'Order created. Use the tracking link to check its status.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Checkout failed');
     } finally {
