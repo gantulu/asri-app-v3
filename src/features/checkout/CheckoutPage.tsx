@@ -25,7 +25,7 @@ export function CheckoutPage() {
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [orderReady, setOrderReady] = useState(false);
+  const [orderReady, setOrderReady] = useState(false);\n  const [orderOutcome, setOrderOutcome] = useState('');
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.qty, 0);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -54,14 +54,21 @@ export function CheckoutPage() {
           order_number: data.order_number,
           guest_token: data.guest_token,
         }));
-        clear();
         setOrderReady(true);
+        setOrderOutcome(data.payment_status ?? 'pending');
       }
       if (invokeError || !data) throw new Error(data?.error ?? invokeError?.message ?? 'Checkout failed');
       if (data.payment_url) {
+        clear();
         localStorage.removeItem('asri:checkout-idem');
         window.location.assign(data.payment_url);
         return;
+      }
+      if (data.payment_status === 'paid') {
+        clear();
+        localStorage.removeItem('asri:checkout-idem');
+      } else if (data.payment_status === 'failed' || data.retry_new_order) {
+        localStorage.removeItem('asri:checkout-idem');
       }
       setError(data.error ?? data.status_message ?? 'Order created. Use the tracking link to check its status.');
     } catch (caught) {
@@ -73,10 +80,12 @@ export function CheckoutPage() {
 
   if (orderReady && error) {
     return <main className="page narrow">
-      <small>ORDER CREATED</small><h1>One more <i>step.</i></h1>
+      <small>ORDER UPDATE</small>
+      <h1>{orderOutcome === 'paid' ? <>Order <i>confirmed.</i></> : orderOutcome === 'failed' ? <>Payment <i>failed.</i></> : <>One more <i>step.</i></>}</h1>
       <p>{error}</p>
-      <p>Your order details and private tracking token are saved in this browser.</p>
+      <p>Your order number and private tracking token are saved in this browser. Keep the token private.</p>
       <Link className="button" to="/track">View order status</Link>
+      {orderOutcome === 'failed' && <p><Link to="/cart">Return to your bag and retry checkout →</Link></p>}
     </main>;
   }
 
