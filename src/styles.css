@@ -7,3 +7,9 @@
 .form button:disabled,.cardrow button:disabled{opacity:.45;cursor:not-allowed}
 .error{line-height:1.6}
 @media(max-width:600px){.cartlist article{gap:12px}.cartlist img{width:76px;height:92px}.total{max-width:100%}}
+
+.tracking-credential{display:grid;gap:10px;margin:24px 0;padding:18px;border:1px solid var(--line);background:#efeee8;max-width:500px}
+.tracking-credential small{font-size:9px;letter-spacing:.1em;color:#777}
+.tracking-credential code{font-size:11px;overflow-wrap:anywhere;user-select:all}
+.tracking-credential button{justify-self:start;border:1px solid var(--line);background:transparent;padding:8px 14px;font-size:10px}
+.tracking-credential p{margin:0;font-size:10px;color:#777}
