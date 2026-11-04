@@ -1,4 +1,4 @@
-import { equal, hash, hmac, validEmail } from '../_shared.ts';
+import { equal, hash, hmac, mapDuitkuCallbackStatus, validEmail } from '../_shared.ts';
 
 Deno.test('SHA-256 hash is deterministic', async () => {
   const actual = await hash('asri-test');
@@ -23,5 +23,14 @@ Deno.test('constant-time equality helper rejects mismatches', () => {
 Deno.test('email validation rejects malformed and oversized values', () => {
   if (!validEmail('customer@example.com') || validEmail('not-an-email') || validEmail('x'.repeat(260) + '@example.com')) {
     throw new Error('Email validation returned an unexpected result');
+  }
+});
+
+Deno.test('Duitku POP callback codes map conservatively', () => {
+  if (mapDuitkuCallbackStatus('00') !== 'paid'
+    || mapDuitkuCallbackStatus('01') !== 'failed'
+    || mapDuitkuCallbackStatus('02') !== 'needs_review'
+    || mapDuitkuCallbackStatus('unknown') !== 'needs_review') {
+    throw new Error('Unexpected Duitku callback result mapping');
   }
 });
