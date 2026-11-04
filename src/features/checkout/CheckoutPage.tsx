@@ -8,6 +8,11 @@ import { useCart } from '../cart/store';
 type Customer = { customer_name: string; email: string; phone: string; address: string; city: string; postal_code: string };
 type CheckoutResult = { order_number?: string; guest_token?: string; payment_url?: string; error?: string; status_message?: string; payment_status?: string; retry_new_order?: boolean };
 
+function createGuestToken(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(32)))
+    .map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 const fields: { key: keyof Customer; label: string; type?: string }[] = [
   { key: 'customer_name', label: 'Full name' },
   { key: 'email', label: 'Email', type: 'email' },
@@ -36,13 +41,17 @@ export function CheckoutPage() {
     setBusy(true);
     try {
       let idempotencyKey = localStorage.getItem('asri:checkout-idem');
-      if (!idempotencyKey) {
+      let guestToken = localStorage.getItem('asri:checkout-token');
+      if (!idempotencyKey || !guestToken) {
         idempotencyKey = crypto.randomUUID();
+        guestToken = createGuestToken();
         localStorage.setItem('asri:checkout-idem', idempotencyKey);
+        localStorage.setItem('asri:checkout-token', guestToken);
       }
       const { data, error: invokeError } = await db.functions.invoke<CheckoutResult>('create-order-payment', {
         body: {
           ...customer,
+          guest_token: guestToken,
           items: items.map((item) => ({ product_id: item.product.id, quantity: item.qty })),
           shipping_cost: 0,
         },
@@ -52,7 +61,7 @@ export function CheckoutPage() {
       if (data?.order_number && data.guest_token) {
         localStorage.setItem('asri:order', JSON.stringify({
           order_number: data.order_number,
-          guest_token: data.guest_token,
+          guest_token: data.guest_token ?? guestToken,
         }));
         setOrderReady(true);
         setOrderOutcome(data.payment_status ?? 'pending');
@@ -61,14 +70,17 @@ export function CheckoutPage() {
       if (data.payment_url) {
         clear();
         localStorage.removeItem('asri:checkout-idem');
+        localStorage.removeItem('asri:checkout-token');
         window.location.assign(data.payment_url);
         return;
       }
       if (data.payment_status === 'paid') {
         clear();
         localStorage.removeItem('asri:checkout-idem');
+        localStorage.removeItem('asri:checkout-token');
       } else if (data.payment_status === 'failed' || data.retry_new_order) {
         localStorage.removeItem('asri:checkout-idem');
+        localStorage.removeItem('asri:checkout-token');
       }
       setError(data.error ?? data.status_message ?? 'Order created. Use the tracking link to check its status.');
     } catch (caught) {
