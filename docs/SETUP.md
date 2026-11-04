@@ -38,7 +38,7 @@ Supabase supplies `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Never expose s
 - Callback signature is HMAC-SHA256 over `merchantCode + amount + merchantOrderId`.
 - POP callback `resultCode=00` is paid and `01` is failed. Other callback codes require review. Redirect query parameters never update payment state.
 - Failed payment restores stock once. Unpaid orders expire after the 60-minute invoice window; pg_cron releases reserved stock.
-- Guest token is HMAC-derived from the idempotency key and API key; only its hash is stored in PostgreSQL. The browser keeps the bearer token in local storage to support reloads. Customers must keep it private.
+- The browser generates a cryptographically random 256-bit guest token before checkout and stores it with the idempotency key. The backend stores only its SHA-256 hash. The tracking page displays a copyable bearer token so the customer can use it on another device; customers must keep it private.
 - CORS uses an exact origin allowlist. Do not use wildcard origins in production.
 - Checkout and tracking requests are rate limited in PostgreSQL; callback rate limiting occurs after signature validation.
 
