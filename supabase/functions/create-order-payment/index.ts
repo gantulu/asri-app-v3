@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
       return fail(req, 'Invalid email', 400);
     }
     if (!/^[+0-9() .-]{8,30}$/.test(phone) || address.length > 500
-      || city.length > 100 || !/^\\d{4,10}$/.test(postalCode)) {
+      || city.length > 100 || !/^\d{4,10}$/.test(postalCode)) {
       return fail(req, 'Invalid delivery details', 400);
     }
     if (!Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > 50) {
