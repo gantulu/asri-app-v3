@@ -62,7 +62,7 @@ supabase db reset
 supabase test db
 ```
 
-The database smoke test verifies the new migration columns and rate-limit behavior. Full concurrency and provider integration tests still require a running Supabase test environment and Duitku Sandbox credentials.
+The pgTAP database suite verifies migration columns, rate limiting, same-key idempotent replay, payload conflict, paid/failed callback idempotency, stock restoration, and amount-mismatch review. It does not yet simulate parallel database sessions for checkout contention or the final-stock race. Full concurrency tests and provider integration tests still require a running Supabase test environment; Duitku Sandbox credentials are required for a real provider round trip.
 
 ## Required Edge Function secrets
 
